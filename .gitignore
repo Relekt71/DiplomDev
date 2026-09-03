@@ -22,3 +22,7 @@ sa-token-secret.yaml
 yc-kubeconfig-static
 sa-key.json
 sa-key.json
+*.tfstate
+*.tfstate.*
+.terraform/
+sa-key.json
