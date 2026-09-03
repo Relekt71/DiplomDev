@@ -23,16 +23,14 @@ jobs:
           echo "AWS_ACCESS_KEY_ID=${{ secrets.YC_ACCESS_KEY }}" >> $GITHUB_ENV
           echo "AWS_SECRET_ACCESS_KEY=${{ secrets.YC_SECRET_KEY }}" >> $GITHUB_ENV
 
-      # ВАЖНО: working-directory должен указывать на папку с main.tf
-      # Команда написана в ОДНУ строку, без обратных слэшей (\)
       - name: Terraform Init (Backend)
-        working-directory: diploma/01-backend
+        working-directory: 01-backend
         run: terraform init -backend-config="bucket=diplom-tfstate-relekt" -backend-config="key=backend/terraform.tfstate" -backend-config="region=ru-central1" -backend-config="endpoint=https://storage.yandexcloud.net" -reconfigure
 
       - name: Terraform Plan (Infrastructure)
-        working-directory: diploma/02-infrastructure
+        working-directory: 02-infrastructure
         run: terraform plan -out=tfplan
 
       - name: Terraform Apply (Infrastructure)
-        working-directory: diploma/02-infrastructure
+        working-directory: 02-infrastructure
         run: terraform apply tfplan
