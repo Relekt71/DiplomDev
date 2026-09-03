@@ -22,6 +22,7 @@ jobs:
         run: |
           echo "AWS_ACCESS_KEY_ID=${{ secrets.YC_ACCESS_KEY }}" >> $GITHUB_ENV
           echo "AWS_SECRET_ACCESS_KEY=${{ secrets.YC_SECRET_KEY }}" >> $GITHUB_ENV
+          echo "YC_CLOUD_ID=${{ secrets.YC_CLOUD_ID }}" >> $GITHUB_ENV
 
       - name: Terraform Init (Backend)
         working-directory: 01-backend
