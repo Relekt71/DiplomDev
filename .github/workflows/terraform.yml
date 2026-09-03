@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:  # можно запустить вручную, если хочешь применить изменения
+  workflow_dispatch:  # можно запустить вручную для Apply
 
 jobs:
   terraform:
@@ -16,44 +16,58 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
-      - name: Configure Yandex Cloud credentials
-        env:
-          YC_TOKEN: ${{ secrets.YC_TOKEN }}
-          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
-        run: |
-          echo "YC_TOKEN=$YC_TOKEN" >> $GITHUB_ENV
-          echo "YC_FOLDER_ID=$YC_FOLDER_ID" >> $GITHUB_ENV
-
-      # План в папке 01-backend (S3 bucket)
+      # --- Блок 1: Инициализация и план для бэкенда (S3 bucket) ---
       - name: Terraform Init (backend)
         working-directory: 01-backend
+        env:
+          YC_SERVICE_ACCOUNT_KEY_FILE: \${{ secrets.YC_SERVICE_ACCOUNT_KEY_FILE }}
+          YC_CLOUD_ID: \${{ secrets.YC_CLOUD_ID }}
+          YC_FOLDER_ID: \${{ secrets.YC_FOLDER_ID }}
         run: terraform init
+
       - name: Terraform Plan (backend)
         working-directory: 01-backend
         env:
-          YC_SERVICE_ACCOUNT_KEY_FILE: ${{ secrets.YC_SERVICE_ACCOUNT_KEY_FILE }}
-          YC_CLOUD_ID: ${{ secrets.YC_CLOUD_ID }}
-          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
-          TF_VAR_state_bucket_name: ${{ secrets.YC_STATE_BUCKET }}
-          TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
-          TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+          YC_SERVICE_ACCOUNT_KEY_FILE: \${{ secrets.YC_SERVICE_ACCOUNT_KEY_FILE }}
+          YC_CLOUD_ID: \${{ secrets.YC_CLOUD_ID }}
+          YC_FOLDER_ID: \${{ secrets.YC_FOLDER_ID }}
+          TF_VAR_state_bucket_name: \${{ secrets.YC_STATE_BUCKET }}
+          TF_VAR_yc_cloud_id: \${{ secrets.YC_CLOUD_ID }}
+          TF_VAR_yc_folder_id: \${{ secrets.YC_FOLDER_ID }}
         run: terraform plan -out=tfplan-backend
 
-
-      # План в папке 02-infrastructure (кластер и сеть)
+      # --- Блок 2: Инициализация и план для инфраструктуры (сеть, кластер) ---
       - name: Terraform Init (infra)
         working-directory: 02-infrastructure
+        env:
+          YC_SERVICE_ACCOUNT_KEY_FILE: \${{ secrets.YC_SERVICE_ACCOUNT_KEY_FILE }}
+          YC_CLOUD_ID: \${{ secrets.YC_CLOUD_ID }}
+          YC_FOLDER_ID: \${{ secrets.YC_FOLDER_ID }}
         run: terraform init
+
       - name: Terraform Plan (infra)
         working-directory: 02-infrastructure
+        env:
+          YC_SERVICE_ACCOUNT_KEY_FILE: \${{ secrets.YC_SERVICE_ACCOUNT_KEY_FILE }}
+          YC_CLOUD_ID: \${{ secrets.YC_CLOUD_ID }}
+          YC_FOLDER_ID: \${{ secrets.YC_FOLDER_ID }}
         run: terraform plan -out=tfplan-infra
 
-      # Apply только при workflow_dispatch (ручном запуске)
+      # --- Блок 3: Apply (только при ручном запуске) ---
       - name: Terraform Apply (backend)
         if: github.event_name == 'workflow_dispatch'
         working-directory: 01-backend
+        env:
+          YC_SERVICE_ACCOUNT_KEY_FILE: \${{ secrets.YC_SERVICE_ACCOUNT_KEY_FILE }}
+          YC_CLOUD_ID: \${{ secrets.YC_CLOUD_ID }}
+          YC_FOLDER_ID: \${{ secrets.YC_FOLDER_ID }}
         run: terraform apply tfplan-backend
+
       - name: Terraform Apply (infra)
         if: github.event_name == 'workflow_dispatch'
         working-directory: 02-infrastructure
+        env:
+          YC_SERVICE_ACCOUNT_KEY_FILE: \${{ secrets.YC_SERVICE_ACCOUNT_KEY_FILE }}
+          YC_CLOUD_ID: \${{ secrets.YC_CLOUD_ID }}
+          YC_FOLDER_ID: \${{ secrets.YC_FOLDER_ID }}
         run: terraform apply tfplan-infra
