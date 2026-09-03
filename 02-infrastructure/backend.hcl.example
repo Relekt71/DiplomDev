@@ -1,0 +1,12 @@
+# Скопируйте в backend.hcl и заполните значениями из output 01-backend
+# backend.hcl НЕ попадает в git (см. .gitignore)
+
+bucket                      = "my-diplom-tfstate-bucket"
+key                         = "02-infrastructure/terraform.tfstate"
+region                      = "ru-central1"
+endpoint                    = "https://storage.yandexcloud.net"
+access_key                  = "ВСТАВЬТЕ_ИЗ_OUTPUT_01_BACKEND"
+secret_key                  = "ВСТАВЬТЕ_ИЗ_OUTPUT_01_BACKEND"
+skip_region_validation      = true
+skip_credentials_validation = true
+skip_metadata_api_check     = true

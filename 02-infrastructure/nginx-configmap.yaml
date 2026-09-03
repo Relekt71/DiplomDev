@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-demo-config
+  namespace: diploma-project
+data:
+  default.conf: |
+    server {
+      listen 80;
+      server_name _;
+      location / {
+        root /usr/share/nginx/html;
+        index index.html;
+      }
+      # Сюда потом можно добавить логирование, rate limit и т.п.
+    }

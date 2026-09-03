@@ -1,0 +1,9 @@
+# Скопируйте в terraform.tfvars и заполните своими значениями.
+# terraform.tfvars НЕ попадает в git (см. .gitignore)
+
+yc_cloud_id            = "b1gXXXXXXXXXXXXXXXXX"
+yc_folder_id           = "b1gXXXXXXXXXXXXXXXXX"
+yc_default_zone        = "ru-central1-a"
+sa_name                = "tf-diplom-sa"
+state_bucket_name      = "my-diplom-tfstate-bucket"
+state_bucket_max_size  = 5368709120

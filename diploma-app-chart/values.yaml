@@ -1,0 +1,36 @@
+replicaCount: 2
+
+image:
+  repository: cr.cloud.yandex.net/crpjnakmdh5612ocuccu/diploma-app
+  tag: v1.0.0
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "200m"
+    memory: "256Mi"
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+  automountServiceToken: true
+
+rbac:
+  create: false
+
+ingress:
+  enabled: false
+
+httpRoute:
+  enabled: false
+
+autoscaling:
+  enabled: false

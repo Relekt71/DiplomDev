@@ -1,0 +1,15 @@
+yc_cloud_id        = "b1gXXXXXXXXXXXXXXXXX"
+yc_folder_id       = "b1gXXXXXXXXXXXXXXXXX"
+yc_default_zone    = "ru-central1-a"
+network_name       = "diplom-net"
+cluster_name       = "diplom-k8s"
+k8s_version        = "1.30"
+k8s_sa_name        = "k8s-diplom-sa"
+cluster_ipv4_range = "172.16.0.0/16"
+node_platform_id   = "standard-v2"
+node_cores         = 2
+node_memory        = 4
+node_disk_type     = "network-hdd"
+node_disk_size     = 50
+node_count         = 2
+registry_name      = "diplom-registry"

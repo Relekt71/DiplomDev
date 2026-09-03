@@ -1,0 +1,19 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+
+# Yandex Cloud secrets
+sa-key.json
+yc-kubeconfig
+
+# Helm
+*.tgz
+.cr-chart-cache/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
