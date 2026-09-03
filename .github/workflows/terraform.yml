@@ -31,9 +31,12 @@ jobs:
       - name: Terraform Plan (backend)
         working-directory: 01-backend
         env:
-          TF_VAR_state_bucket_name: \${{ secrets.YC_STATE_BUCKET }}
-          TF_VAR_yc_cloud_id: \${{ secrets.YC_CLOUD_ID }}
-          TF_VAR_yc_folder_id: \${{ secrets.YC_FOLDER_ID }}
+          YC_SERVICE_ACCOUNT_KEY_FILE: ${{ secrets.YC_SERVICE_ACCOUNT_KEY_FILE }}
+          YC_CLOUD_ID: ${{ secrets.YC_CLOUD_ID }}
+          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
+          TF_VAR_state_bucket_name: ${{ secrets.YC_STATE_BUCKET }}
+          TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+          TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
         run: terraform plan -out=tfplan-backend
 
 
