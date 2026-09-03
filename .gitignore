@@ -17,3 +17,7 @@ yc-kubeconfig
 *.swp
 *.swo
 *~
+sa-key.json
+sa-token-secret.yaml
+yc-kubeconfig-static
+sa-key.json

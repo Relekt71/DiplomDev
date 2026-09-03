@@ -30,7 +30,10 @@ jobs:
         run: terraform init
       - name: Terraform Plan (backend)
         working-directory: 01-backend
+        env:
+          TF_VAR_state_bucket_name: \${{ secrets.YC_STATE_BUCKET }}
         run: terraform plan -out=tfplan-backend
+
 
       # План в папке 02-infrastructure (кластер и сеть)
       - name: Terraform Init (infra)
