@@ -13,10 +13,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        # После этого шага файлы репозитория лежат прямо в корне раннера
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
-        # Версию не задаём — берём последнюю стабильную
 
       - name: Set AWS credentials & Terraform variables
         run: |
@@ -25,18 +25,18 @@ jobs:
           echo "TF_VAR_yc_cloud_id=${{ secrets.YC_CLOUD_ID }}" >> $GITHUB_ENV
           echo "TF_VAR_yc_folder_id=${{ secrets.YC_FOLDER_ID }}" >> $GITHUB_ENV
 
-      # Инициализация бэкенда (только в папке 01-backend)
+      # Инициализация бэкенда: путь БЕЗ diploma/
       - name: Terraform Init (Backend)
-        working-directory: diploma/01-backend
+        working-directory: 01-backend
         run: terraform init -upgrade
 
-      # План изменений (только в папке 02-infrastructure)
+      # План изменений: путь БЕЗ diploma/
       - name: Terraform Plan (Infrastructure)
-        working-directory: diploma/02-infrastructure
+        working-directory: 02-infrastructure
         run: terraform plan -out=tfplan
 
-      # Применение изменений (только на push в main)
+      # Применение изменений
       - name: Terraform Apply (Infrastructure)
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        working-directory: diploma/02-infrastructure
+        working-directory: 02-infrastructure
         run: terraform apply -auto-approve tfplan
