@@ -26,3 +26,8 @@ sa-key.json
 *.tfstate.*
 .terraform/
 sa-key.json
+*.tfstate
+*.tfstate.*
+.terraform/
+sa-key.json
+*.json
