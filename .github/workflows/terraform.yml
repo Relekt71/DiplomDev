@@ -1,0 +1,51 @@
+name: Terraform CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # можно запустить вручную, если хочешь применить изменения
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Configure Yandex Cloud credentials
+        env:
+          YC_TOKEN: ${{ secrets.YC_TOKEN }}
+          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
+        run: |
+          echo "YC_TOKEN=$YC_TOKEN" >> $GITHUB_ENV
+          echo "YC_FOLDER_ID=$YC_FOLDER_ID" >> $GITHUB_ENV
+
+      # План в папке 01-backend (S3 bucket)
+      - name: Terraform Init (backend)
+        working-directory: 01-backend
+        run: terraform init
+      - name: Terraform Plan (backend)
+        working-directory: 01-backend
+        run: terraform plan -out=tfplan-backend
+
+      # План в папке 02-infrastructure (кластер и сеть)
+      - name: Terraform Init (infra)
+        working-directory: 02-infrastructure
+        run: terraform init
+      - name: Terraform Plan (infra)
+        working-directory: 02-infrastructure
+        run: terraform plan -out=tfplan-infra
+
+      # Apply только при workflow_dispatch (ручном запуске)
+      - name: Terraform Apply (backend)
+        if: github.event_name == 'workflow_dispatch'
+        working-directory: 01-backend
+        run: terraform apply tfplan-backend
+      - name: Terraform Apply (infra)
+        if: github.event_name == 'workflow_dispatch'
+        working-directory: 02-infrastructure
+        run: terraform apply tfplan-infra
