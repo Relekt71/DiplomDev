@@ -18,26 +18,21 @@ jobs:
         with:
           terraform_version: 1.9.8
 
-      # Экспортируем ключи доступа к Yandex Cloud Storage (S3-compatible)
-      # Эти значения должны быть добавлены в Settings -> Secrets and variables -> Actions
-      # YC_ACCESS_KEY и YC_SECRET_KEY
       - name: Set AWS credentials
         run: |
           echo "AWS_ACCESS_KEY_ID=${{ secrets.YC_ACCESS_KEY }}" >> $GITHUB_ENV
           echo "AWS_SECRET_ACCESS_KEY=${{ secrets.YC_SECRET_KEY }}" >> $GITHUB_ENV
 
-      # Инициализация бэкенда (только init, без plan/apply)
-      # Команда написана в одну строку, чтобы избежать ошибок парсинга YAML
+      # ВАЖНО: working-directory должен указывать на папку с main.tf
+      # Команда написана в ОДНУ строку, без обратных слэшей (\)
       - name: Terraform Init (Backend)
         working-directory: diploma/01-backend
         run: terraform init -backend-config="bucket=diplom-tfstate-relekt" -backend-config="key=backend/terraform.tfstate" -backend-config="region=ru-central1" -backend-config="endpoint=https://storage.yandexcloud.net" -reconfigure
 
-      # План изменений для реальной инфраструктуры
       - name: Terraform Plan (Infrastructure)
         working-directory: diploma/02-infrastructure
         run: terraform plan -out=tfplan
 
-      # Применение изменений
       - name: Terraform Apply (Infrastructure)
         working-directory: diploma/02-infrastructure
         run: terraform apply tfplan
