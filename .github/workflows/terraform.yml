@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:  # Ручной запуск для apply
+  pull_request:
 
 jobs:
   terraform:
@@ -16,61 +16,37 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: "~> 1.9"
+          terraform_version: 1.9.8
 
-      # --- ШАГ 1: Подготовка ключа сервисного аккаунта ---
-      # Мы НЕ передаем JSON напрямую в env шагов plan/apply.
-      # Мы пишем секрет в файл и передаем путь к файлу через GITHUB_ENV.
-      - name: Create SA Key file
+      # ---------------------------------------------------------
+      # Шаг 1: Экспорт AWS ключей из GitHub Secrets
+      # Это всё, что нужно для доступа к S3-бэкенду в Yandex Cloud
+      # ---------------------------------------------------------
+      - name: Set AWS credentials
         run: |
-          mkdir -p /tmp
-          echo '${{ secrets.YC_SERVICE_ACCOUNT_KEY_FILE }}' > /tmp/sa-key.json
-          # Экспортируем путь к файлу как переменную окружения для всех последующих шагов
-          echo "YC_SERVICE_ACCOUNT_KEY_FILE=/tmp/sa-key.json" >> $GITHUB_ENV
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.YC_ACCESS_KEY }}" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.YC_SECRET_KEY }}" >> $GITHUB_ENV
 
-      # --- ШАГ 2: Инициализация бэкенда (01-backend) ---
-      # ВАЖНО: Используем -backend-config для передачи имени бакета.
-      # Флаг -reconfigure обязателен, если параметры бэкенда меняются.
-      - name: Terraform Init (backend)
-        working-directory: 01-backend
+      # ---------------------------------------------------------
+      # Шаг 2: Инициализация бэкенда (ТОЛЬКО init, без plan/apply)
+      # ---------------------------------------------------------
+      - name: Terraform Init (Backend)
+        working-directory: diploma/01-backend
         run: |
           terraform init \
-            -backend-config="bucket=${{ secrets.YC_STATE_BUCKET }}" \
+            -backend-config="bucket=diplom-tfstate-relekt" \
             -backend-config="key=backend/terraform.tfstate" \
+            -backend-config="region=ru-central1" \
+            -backend-config="endpoint=https://storage.yandexcloud.net" \
             -reconfigure
 
-      - name: Terraform Plan (backend)
-        working-directory: 01-backend
-        env:
-          YC_CLOUD_ID: ${{ secrets.YC_CLOUD_ID }}
-          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
-        run: terraform plan -out=tfplan-backend
+      # ---------------------------------------------------------
+      # Шаг 3: Plan и Apply для реальной инфраструктуры
+      # ---------------------------------------------------------
+      - name: Terraform Plan (Infrastructure)
+        working-directory: diploma/02-infrastructure
+        run: terraform plan -out=tfplan
 
-      # --- ШАГ 3: Инициализация основной инфраструктуры (02-infrastructure) ---
-      - name: Terraform Init (infra)
-        working-directory: 02-infrastructure
-        run: |
-          terraform init \
-            -backend-config="bucket=${{ secrets.YC_STATE_BUCKET }}" \
-            -backend-config="key=infra/terraform.tfstate" \
-            -reconfigure
-
-      - name: Terraform Plan (infra)
-        working-directory: 02-infrastructure
-        env:
-          YC_CLOUD_ID: ${{ secrets.YC_CLOUD_ID }}
-          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
-        run: terraform plan -out=tfplan-infra
-
-      # --- ШАГ 4: Apply (ТОЛЬКО при ручном запуске workflow_dispatch) ---
-      # Это защита от случайного изменения инфраструктуры при обычном push.
-      
-      - name: Terraform Apply (backend)
-        if: github.event_name == 'workflow_dispatch'
-        working-directory: 01-backend
-        run: terraform apply tfplan-backend
-
-      - name: Terraform Apply (infra)
-        if: github.event_name == 'workflow_dispatch'
-        working-directory: 02-infrastructure
-        run: terraform apply tfplan-infra
+      - name: Terraform Apply (Infrastructure)
+        working-directory: diploma/02-infrastructure
+        run: terraform apply tfplan
