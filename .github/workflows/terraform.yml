@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:
+  workflow_dispatch:  # Ручной запуск для apply
 
 jobs:
   terraform:
@@ -15,38 +15,56 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~> 1.9"
 
+      # --- ШАГ 1: Подготовка ключа сервисного аккаунта ---
+      # Мы НЕ передаем JSON напрямую в env шагов plan/apply.
+      # Мы пишем секрет в файл и передаем путь к файлу через GITHUB_ENV.
       - name: Create SA Key file
         run: |
+          mkdir -p /tmp
           echo '${{ secrets.YC_SERVICE_ACCOUNT_KEY_FILE }}' > /tmp/sa-key.json
+          # Экспортируем путь к файлу как переменную окружения для всех последующих шагов
           echo "YC_SERVICE_ACCOUNT_KEY_FILE=/tmp/sa-key.json" >> $GITHUB_ENV
 
-      # --- Backend (S3 bucket) ---
+      # --- ШАГ 2: Инициализация бэкенда (01-backend) ---
+      # ВАЖНО: Используем -backend-config для передачи имени бакета.
+      # Флаг -reconfigure обязателен, если параметры бэкенда меняются.
       - name: Terraform Init (backend)
         working-directory: 01-backend
-        run: terraform init
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.YC_STATE_BUCKET }}" \
+            -backend-config="key=backend/terraform.tfstate" \
+            -reconfigure
 
       - name: Terraform Plan (backend)
         working-directory: 01-backend
         env:
-          TF_VAR_state_bucket_name: ${{ secrets.YC_STATE_BUCKET }}
-          TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
-          TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+          YC_CLOUD_ID: ${{ secrets.YC_CLOUD_ID }}
+          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
         run: terraform plan -out=tfplan-backend
 
-      # --- Infrastructure (network, cluster, etc.) ---
+      # --- ШАГ 3: Инициализация основной инфраструктуры (02-infrastructure) ---
       - name: Terraform Init (infra)
         working-directory: 02-infrastructure
-        run: terraform init
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.YC_STATE_BUCKET }}" \
+            -backend-config="key=infra/terraform.tfstate" \
+            -reconfigure
 
       - name: Terraform Plan (infra)
         working-directory: 02-infrastructure
         env:
-          TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
-          TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+          YC_CLOUD_ID: ${{ secrets.YC_CLOUD_ID }}
+          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
         run: terraform plan -out=tfplan-infra
 
-      # --- Apply (only on manual trigger) ---
+      # --- ШАГ 4: Apply (ТОЛЬКО при ручном запуске workflow_dispatch) ---
+      # Это защита от случайного изменения инфраструктуры при обычном push.
+      
       - name: Terraform Apply (backend)
         if: github.event_name == 'workflow_dispatch'
         working-directory: 01-backend
